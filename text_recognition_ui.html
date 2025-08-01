@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Text Recognition System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1em;
+        }
+
+        .upload-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            transition: transform 0.3s ease;
+        }
+
+        .upload-section:hover {
+            transform: translateY(-2px);
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(45deg, #f8f9ff, #f0f2ff);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: linear-gradient(45deg, #f0f2ff, #e8ecff);
+            transform: scale(1.02);
+        }
+
+        .upload-area.dragover {
+            background: linear-gradient(45deg, #e8ecff, #dde4ff);
+            border-color: #764ba2;
+            transform: scale(1.05);
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            color: #667eea;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .upload-text {
+            font-size: 1.3em;
+            color: #666;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .upload-hint {
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .processing {
+            display: none;
+            text-align: center;
+            padding: 30px;
+            background: white;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results-section {
+            display: none;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .results-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .results-header h2 {
+            color: #333;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .images-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .image-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .image-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .image-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            margin-bottom: 15px;
+        }
+
+        .text-results {
+            background: linear-gradient(135deg, #f8f9ff, #f0f2ff);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+        }
+
+        .text-result {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #667eea;
+        }
+
+        .text-label {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            font-size: 1.1em;
+        }
+
+        .text-label::before {
+            content: "🤖";
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .text-content {
+            font-size: 1.1em;
+            color: #444;
+            line-height: 1.6;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            border: 2px solid #e9ecef;
+        }
+
+        .text-content.empty {
+            color: #999;
+            font-style: italic;
+        }
+
+        .confidence-meter {
+            margin-top: 15px;
+            background: #e9ecef;
+            border-radius: 25px;
+            padding: 5px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 20px;
+            background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #0abde3);
+            border-radius: 20px;
+            transition: width 0.8s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .new-analysis-btn {
+            background: linear-gradient(135deg, #48dbfb, #0abde3);
+            margin-top: 30px;
+            display: block;
+            width: 200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .error-message {
+            background: #ffe6e6;
+            color: #d63031;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid #d63031;
+            display: none;
+        }
+
+        .success-indicator {
+            color: #00b894;
+            font-size: 1.5em;
+            margin-left: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .images-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .upload-section, .results-section {
+                padding: 20px;
+            }
+        }
+
+        .feature-badges {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔤 Enhanced Text Recognition System</h1>
+            <p>Upload handwritten or printed text images for accurate OCR analysis</p>
+            <div class="feature-badges">
+                <span class="badge">TrOCR Powered</span>
+                <span class="badge">Advanced Preprocessing</span>
+                <span class="badge">High Accuracy</span>
+            </div>
+        </div>
+
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <span class="upload-icon">📸</span>
+                <div class="upload-text">Click to upload or drag & drop your image</div>
+                <div class="upload-hint">Supports JPG, PNG, TIFF formats • Maximum 10MB</div>
+                <input type="file" id="fileInput" accept="image/*">
+                <button class="btn" onclick="document.getElementById('fileInput').click()">
+                    Choose Image File
+                </button>
+            </div>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <div class="processing" id="processingSection">
+            <div class="spinner"></div>
+            <h3>🔍 Analyzing Your Image...</h3>
+            <p>Please wait while we process your text with advanced OCR technology</p>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <div class="results-header">
+                <h2>📊 Analysis Results <span class="success-indicator">✅</span></h2>
+            </div>
+
+            <div class="images-container">
+                <div class="image-card">
+                    <h3>📷 Original Image</h3>
+                    <img id="originalImage" class="image-preview" alt="Original uploaded image">
+                    <p><strong>Uploaded File:</strong> <span id="fileName"></span></p>
+                </div>
+                
+                <div class="image-card">
+                    <h3>⚡ Processed Image</h3>
+                    <img id="processedImage" class="image-preview" alt="Processed image">
+                    <p><strong>Enhanced for OCR</strong> with noise reduction and contrast optimization</p>
+                </div>
+            </div>
+
+            <div class="text-results">
+                <div class="text-result">
+                    <div class="text-label">Recognized Text</div>
+                    <div class="text-content" id="recognizedText"></div>
+                    <div class="confidence-meter">
+                        <div class="confidence-fill" id="confidenceFill" style="width: 0%">
+                            Confidence: 0%
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn new-analysis-btn" onclick="resetSystem()">
+                🔄 Analyze New Image
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Simulated OCR processing (replace with actual backend integration)
+        class MockTextRecognizer {
+            constructor() {
+                this.isProcessing = false;
+            }
+
+            async processImage(imageFile) {
+                // Simulate processing delay
+                await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 2000));
+                
+                // Mock results based on image characteristics
+                const mockTexts = [
+                    "The quick brown fox jumps over the lazy dog",
+                    "Hello world! This is a test of handwriting recognition.",
+                    "Machine learning algorithms can recognize text patterns",
+                    "Advanced OCR technology processes images accurately",
+                    "Artificial intelligence transforms written text to digital format"
+                ];
+
+                const randomText = mockTexts[Math.floor(Math.random() * mockTexts.length)];
+                const confidence = 0.75 + Math.random() * 0.24; // 75-99%
+
+                return {
+                    recognizedText: randomText,
+                    confidence: confidence,
+                    processedImageData: this.generateMockProcessedImage()
+                };
+            }
+
+            generateMockProcessedImage() {
+                // In real implementation, this would be the actual processed image
+                // For demo, we'll create a canvas with some processed-looking content
+                const canvas = document.createElement('canvas');
+                canvas.width = 400;
+                canvas.height = 150;
+                const ctx = canvas.getContext('2d');
+                
+                // Create a mock processed image appearance
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, 400, 150);
+                
+                ctx.fillStyle = '#000000';
+                ctx.font = '16px Arial';
+                ctx.fillText('PROCESSED: Enhanced for OCR', 50, 50);
+                ctx.fillText('• Noise reduced', 50, 80);
+                ctx.fillText('• Contrast optimized', 50, 110);
+                
+                return canvas.toDataURL();
+            }
+        }
+
+        const recognizer = new MockTextRecognizer();
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const processingSection = document.getElementById('processingSection');
+        const resultsSection = document.getElementById('resultsSection');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // File upload handlers
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            // Validate file
+            if (!file.type.startsWith('image/')) {
+                showError('Please select a valid image file (JPG, PNG, TIFF)');
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                showError('File size must be less than 10MB');
+                return;
+            }
+
+            processImage(file);
+        }
+
+        async function processImage(file) {
+            try {
+                hideError();
+                showProcessing();
+                
+                // Process image
+                const result = await recognizer.processImage(file);
+                
+                // Display results
+                displayResults(file, result);
+                
+            } catch (error) {
+                showError('Error processing image: ' + error.message);
+                hideProcessing();
+            }
+        }
+
+        function showProcessing() {
+            processingSection.style.display = 'block';
+            resultsSection.style.display = 'none';
+            
+            // Add pulse animation to upload area
+            uploadArea.classList.add('pulse');
+        }
+
+        function hideProcessing() {
+            processingSection.style.display = 'none';
+            uploadArea.classList.remove('pulse');
+        }
+
+        function displayResults(file, result) {
+            hideProcessing();
+            
+            // Display images
+            const originalImage = document.getElementById('originalImage');
+            const processedImage = document.getElementById('processedImage');
+            const fileName = document.getElementById('fileName');
+            
+            // Show original image
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                originalImage.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            
+            // Show processed image (mock)
+            processedImage.src = result.processedImageData;
+            
+            // Display file info
+            fileName.textContent = file.name;
+            
+            // Display text results
+            const recognizedText = document.getElementById('recognizedText');
+            recognizedText.textContent = result.recognizedText || 'No text detected';
+            recognizedText.classList.toggle('empty', !result.recognizedText);
+            
+            // Display confidence
+            const confidenceFill = document.getElementById('confidenceFill');
+            const confidencePercent = Math.round(result.confidence * 100);
+            
+            setTimeout(() => {
+                confidenceFill.style.width = confidencePercent + '%';
+                confidenceFill.textContent = `Confidence: ${confidencePercent}%`;
+            }, 500);
+            
+            // Show results section
+            resultsSection.style.display = 'block';
+            
+            // Smooth scroll to results
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                hideError();
+            }, 5000);
+        }
+
+        function hideError() {
+            errorMessage.style.display = 'none';
+        }
+
+        function resetSystem() {
+            fileInput.value = '';
+            resultsSection.style.display = 'none';
+            hideError();
+            
+            // Smooth scroll back to upload
+            document.querySelector('.upload-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Initialize
+        console.log('🚀 Enhanced Text Recognition UI loaded successfully!');
+        console.log('📝 To integrate with your Python backend:');
+        console.log('1. Replace MockTextRecognizer with actual API calls');
+        console.log('2. Send images to your Flask/FastAPI backend');
+        console.log('3. Return processed results in the expected format');
+    </script>
+</body>
+</html>

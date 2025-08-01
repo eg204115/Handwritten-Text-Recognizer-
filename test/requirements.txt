@@ -1,0 +1,16 @@
+opendatasets
+transformers 
+torch 
+torchvision
+# tesseract-ocr
+# libtesseract-dev
+pytesseract
+opencv-python
+scikit-image
+Pillow
+flask
+flask-cors
+# torchaudio
+numpy
+pandas
+matplotlib
