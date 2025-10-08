@@ -7,6 +7,7 @@ import io
 from PIL import Image, ImageEnhance
 import pytesseract
 import warnings
+import tempfile
 warnings.filterwarnings('ignore')
 
 # TrOCR imports
@@ -16,6 +17,14 @@ try:
     TROCR_AVAILABLE = True
 except ImportError:
     TROCR_AVAILABLE = False
+
+# Import HandwritingToTextConverter
+try:
+    from pdf_converter import HandwritingToTextConverter
+    HANDWRITING_CONVERTER_AVAILABLE = True
+except ImportError:
+    HANDWRITING_CONVERTER_AVAILABLE = False
+    print("Warning: HandwritingToTextConverter not available")
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
@@ -501,6 +510,15 @@ class OCRProcessor:
 # Initialize OCR processor
 ocr_processor = OCRProcessor()
 
+# Initialize Handwriting Converter
+if HANDWRITING_CONVERTER_AVAILABLE:
+    print("Initializing HandwritingToTextConverter...")
+    handwriting_converter = HandwritingToTextConverter()
+    print(f"Handwriting Converter initialized. TrOCR loaded: {handwriting_converter.trocr_loaded}")
+else:
+    handwriting_converter = None
+    print("Warning: HandwritingToTextConverter not available")
+
 @app.route('/process', methods=['POST'])
 def process_image():
     try:
@@ -540,15 +558,74 @@ def process_image():
         print(f"Error processing image: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/convert-handwritten', methods=['POST'])
+def convert_handwritten():
+    try:
+        print("=== HANDWRITTEN CONVERSION DEBUG START ===")
+        
+        if handwriting_converter is None:
+            return jsonify({'success': False, 'error': 'Handwriting converter not available'})
+        
+        if 'file' not in request.files:
+            print("✗ No 'file' key in request.files")
+            return jsonify({'success': False, 'error': 'No file provided'})
+        
+        file = request.files['file']
+        if file.filename == '':
+            print("✗ Empty filename")
+            return jsonify({'success': False, 'error': 'No file selected'})
+        
+        filename = file.filename
+        print(f"✓ Received file: '{filename}'")
+        
+        # Read file bytes
+        file_bytes = file.read()
+        print(f"✓ File bytes read: {len(file_bytes)} bytes")
+        
+        if len(file_bytes) == 0:
+            return jsonify({'success': False, 'error': 'File is empty'})
+        
+        # Convert handwritten file to text
+        extracted_text, error_msg, confidence = handwriting_converter.convert_handwritten_file(file_bytes, filename)
+        
+        if error_msg:
+            return jsonify({'success': False, 'error': error_msg})
+        
+        if not extracted_text or not extracted_text.strip():
+            return jsonify({'success': False, 'error': 'No text could be extracted from the file'})
+        
+        print(f"✓ Text extraction successful: {len(extracted_text)} characters")
+        print(f"✓ Confidence: {confidence:.3f}")
+        print(f"✓ First 200 chars: {extracted_text[:200]}...")
+        
+        # Return only the extracted text as JSON
+        return jsonify({
+            'success': True,
+            'text': extracted_text,
+            'confidence': confidence,
+            'filename': filename,
+            'message': 'PDF processed successfully - text extracted'
+        })
+            
+    except Exception as e:
+        print(f"✗ Unexpected error in convert_handwritten: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Server error: {str(e)}'})
+    finally:
+        print("=== HANDWRITTEN CONVERSION DEBUG END ===\n")
+        
+
 @app.route('/health')
 def health_check():
     return jsonify({
         'status': 'healthy',
-        'trocr_available': ocr_processor.trocr_loaded
+        'trocr_available': ocr_processor.trocr_loaded,
+        'handwriting_converter_available': handwriting_converter.trocr_loaded if handwriting_converter else False
     })
 
 if __name__ == '__main__':
     print("Starting Enhanced Multi-Line OCR System...")
     print(f"TrOCR Available: {ocr_processor.trocr_loaded}")
+    print(f"Handwriting Converter Available: {handwriting_converter.trocr_loaded if handwriting_converter else False}")
     app.run(debug=True, host='0.0.0.0', port=5000)
-
